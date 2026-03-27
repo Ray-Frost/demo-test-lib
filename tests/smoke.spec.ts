@@ -1,8 +1,14 @@
-import { test } from '@playwright/test';
 import { LoginPage } from '../pages/LoginPage';
 import { DashboardPage } from '../pages/DashboardPage';
+import { caseTest } from './caseTest';
+import { TEST_LIB_CASE_CODES } from './testLibCaseCodes';
 
-test('User logs in successfully and clicks Add Asset', async ({ page }) => {
+caseTest(
+  {
+    caseCode: TEST_LIB_CASE_CODES.AUTH_LOGIN_SUCCESS_ADD_ASSET,
+    title: 'User logs in successfully and clicks Add Asset',
+  },
+  async ({ page }) => {
   const loginPage = new LoginPage(page);
   const dashboardPage = new DashboardPage(page);
 
@@ -17,4 +23,5 @@ test('User logs in successfully and clicks Add Asset', async ({ page }) => {
 
   // 4. Click Add Asset
   await dashboardPage.clickAddAsset();
-});
+  },
+);
