@@ -7,14 +7,17 @@ const TEST_LIB_CASE_CODE_PATTERN = /^[A-Z0-9_]+$/;
 
 function collectSpecs(suites, collectedSpecs = []) {
   for (const suite of suites ?? []) {
-    for (const spec of suite.specs ?? []) {
-      collectedSpecs.push(spec);
-    }
-
+    collectedSpecs.push(...(suite.specs ?? []));
     collectSpecs(suite.suites, collectedSpecs);
   }
 
   return collectedSpecs;
+}
+
+function filterCaseCodeAnnotations(annotations) {
+  return annotations.filter(
+    (annotation) => annotation?.type === CASE_CODE_ANNOTATION_TYPE,
+  );
 }
 
 function findCaseCodeAnnotations(testEntry) {
@@ -23,18 +26,17 @@ function findCaseCodeAnnotations(testEntry) {
     : [];
 
   if (testAnnotations.length > 0) {
-    return testAnnotations.filter(
-      (annotation) => annotation?.type === CASE_CODE_ANNOTATION_TYPE,
-    );
+    return filterCaseCodeAnnotations(testAnnotations);
   }
 
-  const resultAnnotations = (testEntry.results ?? []).flatMap((result) =>
-    Array.isArray(result.annotations) ? result.annotations : [],
-  );
+  const resultAnnotations = [];
+  for (const result of testEntry.results ?? []) {
+    if (Array.isArray(result.annotations)) {
+      resultAnnotations.push(...result.annotations);
+    }
+  }
 
-  return resultAnnotations.filter(
-    (annotation) => annotation?.type === CASE_CODE_ANNOTATION_TYPE,
-  );
+  return filterCaseCodeAnnotations(resultAnnotations);
 }
 
 function validateCaseCode(caseCode, caseTitle) {
@@ -51,6 +53,22 @@ function validateCaseCode(caseCode, caseTitle) {
   }
 }
 
+function getCaseCodeFromTest(testEntry, caseTitle) {
+  const caseCodeAnnotations = findCaseCodeAnnotations(testEntry);
+
+  if (caseCodeAnnotations.length === 0) {
+    throw new Error(`Test "${caseTitle}" is missing test_lib_case_code annotation.`);
+  }
+
+  if (caseCodeAnnotations.length > 1) {
+    throw new Error(`Test "${caseTitle}" has multiple test_lib_case_code annotations.`);
+  }
+
+  const caseCode = caseCodeAnnotations[0].description?.trim();
+  validateCaseCode(caseCode, caseTitle);
+  return caseCode;
+}
+
 export function verifyResultsJsonReport(report) {
   const seenCaseCodes = new Set();
   const collectedCases = [];
@@ -58,22 +76,7 @@ export function verifyResultsJsonReport(report) {
 
   for (const spec of specs) {
     for (const testEntry of spec.tests ?? []) {
-      const caseCodeAnnotations = findCaseCodeAnnotations(testEntry);
-
-      if (caseCodeAnnotations.length === 0) {
-        throw new Error(
-          `Test "${spec.title}" is missing test_lib_case_code annotation.`,
-        );
-      }
-
-      if (caseCodeAnnotations.length > 1) {
-        throw new Error(
-          `Test "${spec.title}" has multiple test_lib_case_code annotations.`,
-        );
-      }
-
-      const caseCode = caseCodeAnnotations[0].description?.trim();
-      validateCaseCode(caseCode, spec.title);
+      const caseCode = getCaseCodeFromTest(testEntry, spec.title);
 
       if (seenCaseCodes.has(caseCode)) {
         throw new Error(
@@ -98,7 +101,8 @@ export function verifyResultsJsonFile(resultsJsonPath) {
 }
 
 function runCli() {
-  const resultsJsonPath = process.argv[2] ?? path.resolve(process.cwd(), 'results.json');
+  const resultsJsonPath =
+    process.argv[2] ?? path.resolve(process.cwd(), 'results.json');
   const collectedCases = verifyResultsJsonFile(resultsJsonPath);
 
   console.log(

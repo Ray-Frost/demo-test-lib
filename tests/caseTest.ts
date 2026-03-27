@@ -3,14 +3,15 @@ import { type TestLibCaseCode } from './testLibCaseCodes';
 
 export const CASE_CODE_ANNOTATION_TYPE = 'test_lib_case_code';
 
+type CaseCodeValue = TestLibCaseCode | string;
 type CaseTestBody = Parameters<typeof test>[2];
 
 type CaseTestDefinition = {
-  caseCode: TestLibCaseCode | string;
+  caseCode: CaseCodeValue;
   title: string;
 };
 
-export function createCaseTestDetails(caseCode: TestLibCaseCode | string): TestDetails {
+export function createCaseTestDetails(caseCode: CaseCodeValue): TestDetails {
   return {
     annotation: {
       type: CASE_CODE_ANNOTATION_TYPE,
@@ -19,10 +20,9 @@ export function createCaseTestDetails(caseCode: TestLibCaseCode | string): TestD
   };
 }
 
-export function caseTest(caseDefinition: CaseTestDefinition, body: CaseTestBody) {
-  test(
-    caseDefinition.title,
-    createCaseTestDetails(caseDefinition.caseCode),
-    body,
-  );
+export function caseTest(
+  { caseCode, title }: CaseTestDefinition,
+  body: CaseTestBody,
+) {
+  test(title, createCaseTestDetails(caseCode), body);
 }
