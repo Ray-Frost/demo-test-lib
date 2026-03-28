@@ -20,23 +20,28 @@ function filterCaseCodeAnnotations(annotations) {
   );
 }
 
-function findCaseCodeAnnotations(testEntry) {
-  const testAnnotations = Array.isArray(testEntry.annotations)
-    ? testEntry.annotations
-    : [];
+function collectResultAnnotations(results) {
+  const collectedAnnotations = [];
 
-  if (testAnnotations.length > 0) {
-    return filterCaseCodeAnnotations(testAnnotations);
-  }
-
-  const resultAnnotations = [];
-  for (const result of testEntry.results ?? []) {
+  for (const result of results ?? []) {
     if (Array.isArray(result.annotations)) {
-      resultAnnotations.push(...result.annotations);
+      collectedAnnotations.push(...result.annotations);
     }
   }
 
-  return filterCaseCodeAnnotations(resultAnnotations);
+  return collectedAnnotations;
+}
+
+function getTestAnnotations(testEntry) {
+  if (Array.isArray(testEntry.annotations) && testEntry.annotations.length > 0) {
+    return testEntry.annotations;
+  }
+
+  return collectResultAnnotations(testEntry.results);
+}
+
+function findCaseCodeAnnotations(testEntry) {
+  return filterCaseCodeAnnotations(getTestAnnotations(testEntry));
 }
 
 function validateCaseCode(caseCode, caseTitle) {
