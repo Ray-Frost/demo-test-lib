@@ -5,7 +5,10 @@
   "scripts": {
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "test:smoke": "playwright test tests/smoke.spec.ts"
+    "test:smoke": "playwright test tests/smoke.spec.ts",
+    "test:smoke:platform": "playwright test --config=playwright.platform.config.ts tests/smoke.spec.ts",
+    "verify:case-codes": "playwright test --config=playwright.verify.config.ts",
+    "verify:results-json": "node scripts/verify-results-json.mjs"
   },
   "keywords": [],
   "author": "",
