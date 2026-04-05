@@ -16,6 +16,7 @@ test(
       expect.arrayContaining([
         'tests/example.spec.ts',
         'tests/platformAlwaysFail.platform-only.spec.ts',
+        'tests/platformConsumes30Seconds.platform-only.spec.ts',
         'tests/smoke.spec.ts',
       ]),
     );
