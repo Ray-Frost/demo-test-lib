@@ -46,6 +46,7 @@ export function createPlatformConfig(
 
   return defineConfig({
     ...baseConfig,
+    testIgnore: /.*\.contract\.spec\.ts/,
     outputDir: testResultsDir,
     projects: [
       {

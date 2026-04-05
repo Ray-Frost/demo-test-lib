@@ -10,9 +10,16 @@ type Annotation = {
   description?: string;
 };
 
+type BuildTestEntryOptions = {
+  expectedStatus?: string;
+  status?: string;
+  resultStatus?: string;
+};
+
 type ReportCase = {
   title: string;
   annotations: Annotation[];
+  testEntryOptions?: BuildTestEntryOptions;
 };
 
 function createCaseCodeAnnotation(description?: string): Annotation {
@@ -22,21 +29,30 @@ function createCaseCodeAnnotation(description?: string): Annotation {
   };
 }
 
-function buildTestEntry(annotations: Annotation[]) {
+function buildTestEntry(
+  annotations: Annotation[],
+  options: BuildTestEntryOptions = {},
+) {
+  const resultStatus = options.resultStatus ?? 'passed';
+
   return {
     timeout: 30_000,
     annotations,
-    expectedStatus: 'passed',
+    expectedStatus: options.expectedStatus ?? 'passed',
     projectId: 'chromium',
     projectName: 'chromium',
-    status: 'expected',
+    status:
+      options.status ?? (resultStatus === 'passed' ? 'expected' : 'unexpected'),
     results: [
       {
         workerIndex: 0,
         parallelIndex: 0,
-        status: 'passed',
+        status: resultStatus,
         duration: 10,
-        errors: [],
+        errors:
+          resultStatus === 'failed'
+            ? [{ message: 'Intentional platform failure.' }]
+            : [],
         stdout: [],
         stderr: [],
         retry: 0,
@@ -68,7 +84,9 @@ function buildReport(testCases: ReportCase[]) {
           file: SAMPLE_SPEC_PATH,
           line: index + 1,
           column: 1,
-          tests: [buildTestEntry(testCase.annotations)],
+          tests: [
+            buildTestEntry(testCase.annotations, testCase.testEntryOptions),
+          ],
         })),
       },
     ],
@@ -184,6 +202,30 @@ test('accepts a report where every emitted test has one valid case code', async 
     {
       title: 'get started link',
       annotations: [createCaseCodeAnnotation('PLAYWRIGHT_DOCS_GET_STARTED_LINK')],
+    },
+  ]);
+});
+
+test('collects case codes from failed tests when the annotation is present', async () => {
+  const verifyResultsJsonReport = await loadVerifyResultsJsonReport();
+
+  expect(
+    verifyResultsJsonReport(
+      buildReport([
+        {
+          title: 'platform failure case',
+          annotations: [createCaseCodeAnnotation('PLATFORM_ALWAYS_FAIL')],
+          testEntryOptions: {
+            status: 'unexpected',
+            resultStatus: 'failed',
+          },
+        },
+      ]),
+    ),
+  ).toEqual([
+    {
+      caseCode: 'PLATFORM_ALWAYS_FAIL',
+      caseTitle: 'platform failure case',
     },
   ]);
 });
